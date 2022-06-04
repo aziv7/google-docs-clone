@@ -48,14 +48,29 @@ const Editor = () => {
   useEffect(() => {
     const textUpdateHandling = (changes, oldChanges, source) => {
       if (source !== 'user') return;
+
+      socket.emit('text-editor-changes', changes);
       console.log(changes);
     };
 
-    if (quill != null) quill.on('text-change', textUpdateHandling);
+    if (quill != null && socket != null)
+      quill.on('text-change', textUpdateHandling);
     return () => {
-      quill.off('text-change', textUpdateHandling);
+      if (quill != null) quill.off('text-change', textUpdateHandling);
     };
-  }, [quill]);
+  }, [quill, socket]);
+
+  useEffect(() => {
+    const receivingChanges = (changes) => {
+      quill.updateContents(changes);
+    };
+
+    if (quill != null && socket != null)
+      socket.on('changes-received', receivingChanges);
+    return () => {
+      if (quill != null) quill.off('changes-received', receivingChanges);
+    };
+  }, [quill, socket]);
 
   return <div className='container' ref={wrapperRef}></div>;
 };

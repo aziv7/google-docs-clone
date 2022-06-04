@@ -24,6 +24,11 @@ const io = require('socket.io')(4002, {
 
 io.on('connection', (socket) => {
   console.log('connected');
+
+  socket.on('text-editor-changes', (changes) => {
+    console.log(changes);
+    socket.broadcast.emit('changes-received', changes);
+  });
 });
 
 server.listen(config.APP_PORT, () => {
