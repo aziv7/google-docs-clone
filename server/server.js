@@ -1,7 +1,7 @@
 const express = require('express');
 require('dotenv').config();
 const cors = require('cors');
-
+const Document = require('./Schemas/document');
 const { config } = require('./config');
 
 const server = express();
@@ -24,10 +24,25 @@ const io = require('socket.io')(4002, {
 
 io.on('connection', (socket) => {
   console.log('connected');
+  socket.on('fetch-doc', async (data) => {
+    console.log(data);
+    let doc = await Document.findById(data.docId);
 
-  socket.on('text-editor-changes', (changes) => {
-    console.log(changes);
-    socket.broadcast.emit('changes-received', changes);
+    if (!doc) {
+      doc = new Document({ _id: data.docId, data: '' });
+    }
+
+    socket.join(data.docId);
+    socket.emit('get-doc', doc.data);
+    socket.on('text-editor-changes', (changes) => {
+      console.log(changes);
+
+      socket.broadcast.to(data.docId).emit('changes-received', changes);
+    });
+
+    socket.on('save-doc', async (updates) => {
+      let doc = await Document.findByIdAndUpdate(data.docId, updates);
+    });
   });
 });
 
